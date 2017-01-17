@@ -47,11 +47,17 @@ class OBSInspection(object):
         self.errors = []
 
     def run(self):
+        if not hasattr(self, 'chapter'):
+            basename = os.path.splitext(os.path.basename(self.filename))[0]
+            self.errors.append('This is not a chapter: {0}'.format(basename))
+            return
+
         if not self.chapter:
+            self.warnings.append('Chapter {0} has no content!'.format(self.chapter))
             return
 
         if not os.path.isfile(self.filename):
-            self.warnings.append('Chapter {0} does not exist!'.format(self.chapter))
+            self.errors.append('Chapter {0} does not exist!'.format(self.chapter))
             return
 
         with open(self.filename) as chapter_file:
@@ -60,7 +66,7 @@ class OBSInspection(object):
         soup = BeautifulSoup(chapter_html, 'html.parser')
 
         if not soup.find('body'):
-            self.warnings.append('Chapter {0} has no content!'.format(self.chapter))
+            self.errors.append('Chapter {0} has no body!'.format(self.chapter))
             return
 
         content = soup.body.find(id='content')
@@ -79,5 +85,7 @@ class OBSInspection(object):
                 'Chapter {0} has only {1} frame(s).There should be {2}!'.format(self.chapter, frame_count,
                                                                                 expected_frame_count))
 
-        if len(content.find_all('p')) != (frame_count * 2 + 1):
+        paragraphs = content.find_all('p')
+        expected_paragraphs = (frame_count * 2 + 1)
+        if len(paragraphs) != expected_paragraphs:
             self.warnings.append('Bible reference not found at end of chapter {0}!'.format(self.chapter))
